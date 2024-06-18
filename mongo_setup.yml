@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  mongo_setup:
+    image: mongo:5.0
+    hostname: mongo_setup
+    networks:
+      - network_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == evolution-manager
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=SENHA
+    command: >
+      bash -c "
+        echo 'Aguardando MongoDB...';
+        until mongo --username admin --password SENHA --authenticationDatabase admin --host SERVER_IP --eval 'db.runCommand({ ping: 1 })'; do
+          sleep 5;
+        done;
+        echo 'MongoDB está pronto. Iniciando replica set...';
+        mongo --username admin --password SENHA --authenticationDatabase admin --host mongo1 --eval 'rs.initiate({_id: \"rs0\", members: [{ _id: 0, host: \"SERVER_IP:27017\" }, { _id: 1, host: \"SERVER_IP:27018\" }, { _id: 2, host: \"SERVER_IP:27019\" }]})';
+      "
+
+networks:
+  network_public:
+    name: network_public
+    external: true
