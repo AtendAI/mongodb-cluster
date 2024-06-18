@@ -1,103 +1,78 @@
 # uri: mongodb://admin:6WdTM0OSkz3e2K6H@mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
 
-version: "3.7"
+version: '3.7'
 
 services:
   mongo1:
-    image: mongo:7.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
-    ports:
-      - 27017:27017
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    image: mongo:6
     networks:
       - network_public
     volumes:
       - mongo1_data:/data/db
-      - mongo1_config:/data/configdb
-      - /root/mongodb-cluster/initiate-rs.sh:/scripts/initiate-rs.sh
-      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/keyfile
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
+    ports:
+      - 27017:27017
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
-          - node.hostname == manager
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=SENHA
-    entrypoint: ["/bin/bash", "-c", "chmod 600 /data/configdb/keyfile && chown mongodb:mongodb /data/configdb/keyfile && /scripts/initiate-rs.sh && docker-entrypoint.sh mongod --keyFile /data/configdb/keyfile"]
+          - node.hostname == evolution-manager
+    command: >
+      bash -c "echo 'rs.initiate({_id: \"rs0\", members: [{ _id: 0, host: \"mongo1:27017\" }, { _id: 1, host: \"mongo2:27017\" }, { _id: 2, host: \"mongo3:27017\" }]})' > /docker-entrypoint-initdb.d/rs-init.js && mongod --replSet rs0"
 
   mongo2:
-    image: mongo:7.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
-    ports:
-      - 27018:27018
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    image: mongo:6
     networks:
       - network_public
     volumes:
       - mongo2_data:/data/db
-      - mongo2_config:/data/configdb
-      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/keyfile
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
+    ports:
+      - 27018:27017
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
-          - node.hostname == manager
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=SENHA
-    entrypoint: ["/bin/bash", "-c", "chmod 600 /data/configdb/keyfile && chown mongodb:mongodb /data/configdb/keyfile && docker-entrypoint.sh mongod --keyFile /data/configdb/keyfile"]
+          - node.hostname == evolution-manager
+    command: >
+      bash -c "until mongo --host mongo1 --eval 'rs.status()'; do sleep 5; done && mongod --replSet rs0"
 
   mongo3:
-    image: mongo:7.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
-    ports:
-      - 27019:27019
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    image: mongo:6
     networks:
       - network_public
     volumes:
       - mongo3_data:/data/db
-      - mongo3_config:/data/configdb
-      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/keyfile
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
+    ports:
+      - 27019:27017
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
-          - node.hostname == manager
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=SENHA
-    entrypoint: ["/bin/bash", "-c", "chmod 600 /data/configdb/keyfile && chown mongodb:mongodb /data/configdb/keyfile && docker-entrypoint.sh mongod --keyFile /data/configdb/keyfile"]
+          - node.hostname == evolution-manager
+    command: >
+      bash -c "until mongo --host mongo1 --eval 'rs.status()'; do sleep 5; done && mongod --replSet rs0"
 
 volumes:
-  # mongo 1
   mongo1_data:
     external: true
     name: mongo1_data
-  mongo1_config:
-    external: true
-    name: mongo1_config
-  # mongo 2
   mongo2_data:
     external: true
     name: mongo2_data
-  mongo2_config:
-    external: true
-    name: mongo2_config
-  # mongo 3
   mongo3_data:
     external: true
     name: mongo3_data
-  mongo3_config:
-    external: true
-    name: mongo3_config
 
 networks:
   network_public:
