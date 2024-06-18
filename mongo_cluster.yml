@@ -1,80 +1,96 @@
-# uri: mongodb://admin:6WdTM0OSkz3e2K6H@mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
+# uri: mongodb://admin:SENHA@mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0
 
 version: '3.7'
 
 services:
   mongo1:
-    image: mongo:6
+    image: mongo:5.0
+    hostname: mongo1
+    command: mongod --replSet rs0 --keyFile /data/configdb/mongo-keyfile --auth
     networks:
       - network_public
     volumes:
       - mongo1_data:/data/db
+      - mongo1_config:/data/configdb
+      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/mongo-keyfile
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
-    ports:
-      - 27017:27017
+      - MONGO_INITDB_ROOT_PASSWORD=SENHA
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.hostname == evolution-manager
-    command: >
-      bash -c "echo 'rs.initiate({_id: \"rs0\", members: [{ _id: 0, host: \"mongo1:27017\" }, { _id: 1, host: \"mongo2:27017\" }, { _id: 2, host: \"mongo3:27017\" }]})' > /docker-entrypoint-initdb.d/rs-init.js && mongod --replSet rs0"
-
+    ports:
+      - "27017:27017"
+        
   mongo2:
-    image: mongo:6
+    image: mongo:5.0
+    hostname: mongo2
+    command: mongod --replSet rs0 --keyFile /data/configdb/mongo-keyfile --auth
     networks:
       - network_public
     volumes:
       - mongo2_data:/data/db
+      - mongo2_config:/data/configdb
+      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/mongo-keyfile
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
-    ports:
-      - 27018:27017
+      - MONGO_INITDB_ROOT_PASSWORD=SENHA
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.hostname == evolution-manager
-    command: >
-      bash -c "until mongo --host mongo1 --eval 'rs.status()'; do sleep 5; done && mongod --replSet rs0"
+    ports:
+      - "27018:27017"
 
   mongo3:
-    image: mongo:6
+    image: mongo:5.0
+    hostname: mongo3
+    command: mongod --replSet rs0 --keyFile /data/configdb/mongo-keyfile --auth
     networks:
       - network_public
     volumes:
       - mongo3_data:/data/db
+      - mongo3_config:/data/configdb
+      - /root/mongodb-cluster/mongo-keyfile:/data/configdb/mongo-keyfile
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=yiwTOJRFw4gGpADi
-    ports:
-      - 27019:27017
+      - MONGO_INITDB_ROOT_PASSWORD=SENHA
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.hostname == evolution-manager
-    command: >
-      bash -c "until mongo --host mongo1 --eval 'rs.status()'; do sleep 5; done && mongod --replSet rs0"
+    ports:
+      - "27019:27017"
 
 volumes:
   mongo1_data:
     external: true
     name: mongo1_data
+  mongo1_config:
+    external: true
+    name: mongo1_config
   mongo2_data:
     external: true
     name: mongo2_data
+  mongo2_config:
+    external: true
+    name: mongo2_config
   mongo3_data:
     external: true
     name: mongo3_data
+  mongo3_config:
+    external: true
+    name: mongo3_config
 
 networks:
   network_public:
     name: network_public
     external: true
+
